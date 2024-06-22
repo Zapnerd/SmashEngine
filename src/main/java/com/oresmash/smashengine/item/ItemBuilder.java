@@ -117,6 +117,24 @@ public class ItemBuilder {
     }
 
     /**
+     * Sets whether the item should hideflags.
+     *
+     * @param hideflags Whether the item should glow.
+     * @return The ItemBuilder instance.
+     */
+    public ItemBuilder hideflags(boolean hideflags) {
+        if (hideflags) {
+            meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
+            meta.addItemFlags(ItemFlag.HIDE_ITEM_SPECIFICS);
+            meta.addItemFlags(ItemFlag.HIDE_DESTROYS);
+            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+            meta.addItemFlags(ItemFlag.HIDE_DYE);
+        }
+        return this;
+    }
+
+    /**
      * Sets the custom texture for a player head item.
      *
      * @param texture The texture to set.

@@ -84,4 +84,13 @@
           <scope>provided</scope>
       </dependency>
   </dependencies>
+
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub Zapnerd Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/Zapnerd/SmashEngine</url>
+        </repository>
+    </distributionManagement>
+
 </project>
