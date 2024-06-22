@@ -1,0 +1,6 @@
+name: SmashEngine
+version: '${project.version}'
+author: Zapnerd
+main: com.oresmash.smashengine.SmashEngine
+api-version: '1.19'
+load: STARTUP
