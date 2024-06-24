@@ -79,7 +79,7 @@ public abstract class MenuHandler implements InventoryHolder {
     public Inventory getInventory() {
         return inventory;
     }
-    
+
     /**
      * Plays the open sound for the specified player.
      *
