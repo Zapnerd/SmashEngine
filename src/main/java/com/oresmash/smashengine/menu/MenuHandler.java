@@ -69,7 +69,7 @@ public abstract class MenuHandler implements InventoryHolder {
      * @param player The player to open the menu for.
      */
     public void open(Player player) {
-        player.closeInventory();
+        // player.closeInventory();
         setContents();
         player.openInventory(this.inventory);
         playOpenSound(player);
