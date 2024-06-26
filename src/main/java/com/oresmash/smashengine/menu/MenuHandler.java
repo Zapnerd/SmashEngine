@@ -20,7 +20,6 @@ public abstract class MenuHandler implements InventoryHolder {
     private final Inventory inventory;
     @Getter private final int rows;
     @Getter private final String title;
-    @Getter private final Sound clickSound;
     @Getter private final Sound openSound;
 
     /**
@@ -28,10 +27,9 @@ public abstract class MenuHandler implements InventoryHolder {
      *
      * @param title      The title of the menu.
      * @param rows       The number of rows in the menu.
-     * @param clickSound The sound played when an item is clicked.
      * @param openSound  The sound played when the menu is opened.
      */
-    public MenuHandler(String title, int rows, Sound clickSound, Sound openSound) {
+    public MenuHandler(String title, int rows, Sound openSound) {
         this.title = title;
         if (rows > 6) {
             this.rows = 6;
@@ -40,7 +38,6 @@ public abstract class MenuHandler implements InventoryHolder {
             this.rows = rows;
         }
         this.inventory = Bukkit.createInventory(this, rows * 9, textUtils.colorize(title));
-        this.clickSound = clickSound;
         this.openSound = openSound;
     }
 
@@ -51,7 +48,7 @@ public abstract class MenuHandler implements InventoryHolder {
      * @param rows  The number of rows in the menu.
      */
     public MenuHandler(String title, int rows) {
-        this(title, rows, Sound.UI_BUTTON_CLICK, Sound.BLOCK_CHEST_OPEN);
+        this(title, rows, Sound.BLOCK_BARREL_OPEN);
     }
 
     /**
@@ -72,7 +69,7 @@ public abstract class MenuHandler implements InventoryHolder {
      * @param player The player to open the menu for.
      */
     public void open(Player player) {
-        player.closeInventory();
+        // player.closeInventory();
         setContents();
         player.openInventory(this.inventory);
         playOpenSound(player);
@@ -81,15 +78,6 @@ public abstract class MenuHandler implements InventoryHolder {
     @Override
     public Inventory getInventory() {
         return inventory;
-    }
-
-    /**
-     * Plays the click sound for the specified player.
-     *
-     * @param player The player to play the sound for.
-     */
-    public void playClickSound(Player player) {
-        player.playSound(player.getLocation(), clickSound, 1, 1);
     }
 
     /**

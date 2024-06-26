@@ -5,6 +5,7 @@ import com.destroystokyo.paper.profile.ProfileProperty;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -147,6 +148,21 @@ public class ItemBuilder {
                 PlayerProfile profile = Bukkit.createProfile(randomUUID, null);
                 profile.getProperties().add(new ProfileProperty("textures", texture));
                 skullMeta.setPlayerProfile(profile);
+            }
+        }
+        return this;
+    }
+
+    /**
+     * Sets the owner of the player head item.
+     *
+     * @param owner The owner to set.
+     * @return The ItemBuilder instance.
+     */
+    public ItemBuilder owner(OfflinePlayer owner) {
+        if (item.getType() == Material.PLAYER_HEAD) {
+            if (meta instanceof SkullMeta skullMeta) {
+                skullMeta.setOwningPlayer(owner);
             }
         }
         return this;
