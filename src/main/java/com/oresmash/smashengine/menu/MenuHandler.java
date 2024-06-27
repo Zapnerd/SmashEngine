@@ -116,7 +116,6 @@ public abstract class MenuHandler implements InventoryHolder {
                 ItemStack itemStack = itemBuilder.build();
                 itemStack = editItem(itemStack, slot, itemSection);
                 getInventory().setItem(slot, itemStack);
-                addSlotAction(slot, event -> handleItemClick(event, itemSection));
             }
         }
     }
@@ -127,14 +126,6 @@ public abstract class MenuHandler implements InventoryHolder {
      * @param event The InventoryClickEvent.
      */
     public abstract void onClick(InventoryClickEvent event);
-
-    /**
-     * Abstract method to handle item click events with configuration section.
-     *
-     * @param event       The InventoryClickEvent.
-     * @param itemSection The configuration section of the item.
-     */
-    protected abstract void handleItemClick(InventoryClickEvent event, ConfigurationSection itemSection);
 
     /**
      * Abstract method to set the contents of the inventory.
@@ -205,15 +196,5 @@ public abstract class MenuHandler implements InventoryHolder {
      */
     public void clear() {
         inventory.clear();
-    }
-
-    /**
-     * Adds an action to be executed when a specific slot is clicked.
-     *
-     * @param slot   The slot to add the action for.
-     * @param action The action to be executed when the slot is clicked.
-     */
-    public void addSlotAction(int slot, java.util.function.Consumer<InventoryClickEvent> action) {
-        // Implement slot action logic
     }
 }
