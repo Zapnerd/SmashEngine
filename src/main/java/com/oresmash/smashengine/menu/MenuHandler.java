@@ -1,15 +1,21 @@
 package com.oresmash.smashengine.menu;
 
+import com.oresmash.smashengine.SmashEngine;
 import com.oresmash.smashengine.item.ItemBuilder;
+import lombok.Getter;
+import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Sound;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.Sound;
-import lombok.Getter;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.oresmash.smashengine.SmashEngine.textUtils;
 
@@ -18,18 +24,21 @@ import static com.oresmash.smashengine.SmashEngine.textUtils;
  */
 public abstract class MenuHandler implements InventoryHolder {
     private final Inventory inventory;
-    @Getter private final int rows;
-    @Getter private final String title;
-    @Getter private final Sound openSound;
+    @Getter
+    private final int rows;
+    @Getter
+    private final String title;
+    private final Player player;
 
     /**
-     * Constructs a MenuHandler with the specified title, rows, click sound, and open sound.
+     * Constructs a MenuHandler with the specified title and rows.
      *
-     * @param title      The title of the menu.
-     * @param rows       The number of rows in the menu.
-     * @param openSound  The sound played when the menu is opened.
+     * @param player The player for whom the menu is being created.
+     * @param title  The title of the menu.
+     * @param rows   The number of rows in the menu.
      */
-    public MenuHandler(String title, int rows, Sound openSound) {
+    public MenuHandler(Player player, String title, int rows) {
+        this.player = player;
         this.title = title;
         if (rows > 6) {
             this.rows = 6;
@@ -37,18 +46,80 @@ public abstract class MenuHandler implements InventoryHolder {
         } else {
             this.rows = rows;
         }
-        this.inventory = Bukkit.createInventory(this, rows * 9, textUtils.colorize(title));
-        this.openSound = openSound;
+        this.inventory = Bukkit.createInventory(this, this.rows * 9, textUtils.colorize(title));
     }
 
     /**
-     * Constructs a MenuHandler with the specified title and rows, using default sounds.
+     * Constructs a MenuHandler from a configuration section.
      *
-     * @param title The title of the menu.
-     * @param rows  The number of rows in the menu.
+     * @param player        The player for whom the menu is being created.
+     * @param configSection The configuration section.
      */
-    public MenuHandler(String title, int rows) {
-        this(title, rows, Sound.BLOCK_BARREL_OPEN);
+    public MenuHandler(Player player, ConfigurationSection configSection) {
+        this(
+                player,
+                configSection.getString("title", "Menu"),
+                configSection.getInt("rows", 6)
+        );
+        setupFromConfig(configSection);
+    }
+
+    /**
+     * Sets up the menu from a configuration section.
+     *
+     * @param configSection The configuration section.
+     */
+    private void setupFromConfig(ConfigurationSection configSection) {
+        if (configSection.contains("filler")) {
+            Material fillerMaterial = Material.getMaterial(configSection.getString("filler"));
+            if (fillerMaterial != null) {
+                ItemStack fillerItem = new ItemBuilder(fillerMaterial).name(" ").build();
+                fill(fillerItem);
+            }
+        }
+
+        if (configSection.contains("border")) {
+            Material borderMaterial = Material.getMaterial(configSection.getString("border"));
+            if (borderMaterial != null) {
+                ItemStack borderItem = new ItemBuilder(borderMaterial).name(" ").build();
+                border(borderItem);
+            }
+        }
+
+        ConfigurationSection contentsSection = configSection.getConfigurationSection("contents");
+        if (contentsSection != null) {
+            for (String key : contentsSection.getKeys(false)) {
+                ConfigurationSection itemSection = contentsSection.getConfigurationSection(key);
+                if (itemSection == null) continue;
+
+                int slot = Integer.parseInt(key);
+                Material material = Material.getMaterial(itemSection.getString("material", "PAPER"));
+                if (material == null) continue;
+
+                String name = itemSection.getString("display", "Unnamed Item");
+                List<String> lore = itemSection.getStringList("lore");
+
+                // PlaceholderAPI replacements
+                if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+                    name = PlaceholderAPI.setPlaceholders(player, name);
+                    lore = lore.stream().map(line -> PlaceholderAPI.setPlaceholders(player, line)).collect(Collectors.toList());
+                }
+
+                ItemBuilder itemBuilder = new ItemBuilder(material)
+                        .name(name)
+                        .lore(lore)
+                        .glow(itemSection.getBoolean("glow", false))
+                        .hideflags(itemSection.getBoolean("hideflags", false));
+
+                if (itemSection.contains("texture")) {
+                    itemBuilder.texture(itemSection.getString("texture"));
+                }
+
+                ItemStack itemStack = itemBuilder.build();
+                itemStack = editItem(itemStack, slot, itemSection);
+                getInventory().setItem(slot, itemStack);
+            }
+        }
     }
 
     /**
@@ -69,10 +140,8 @@ public abstract class MenuHandler implements InventoryHolder {
      * @param player The player to open the menu for.
      */
     public void open(Player player) {
-        // player.closeInventory();
         setContents();
         player.openInventory(this.inventory);
-        playOpenSound(player);
     }
 
     @Override
@@ -81,12 +150,16 @@ public abstract class MenuHandler implements InventoryHolder {
     }
 
     /**
-     * Plays the open sound for the specified player.
+     * Method to customize items before they are set in the inventory.
      *
-     * @param player The player to play the sound for.
+     * @param item        The item stack to edit.
+     * @param slot        The slot in which the item will be placed.
+     * @param itemSection The configuration section of the item.
+     * @return The edited item stack.
      */
-    public void playOpenSound(Player player) {
-        player.playSound(player.getLocation(), openSound, 1, 1);
+    protected ItemStack editItem(ItemStack item, int slot, ConfigurationSection itemSection) {
+        // Override this method to customize item before setting it
+        return item;
     }
 
     /**
@@ -125,5 +198,23 @@ public abstract class MenuHandler implements InventoryHolder {
      */
     public void clear() {
         inventory.clear();
+    }
+
+    /**
+     * Shows an error item for a slot and reverts to the original item after 30 ticks.
+     *
+     * @param slot The slot to show the error in.
+     * @param originalItem The original item to revert to.
+     * @param message The error message to display.
+     */
+    public void showError(int slot, ItemStack originalItem, String message) {
+        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BIT, 1, 0.75f);
+        ItemStack barrierItem = new ItemBuilder(Material.BARRIER)
+                .name("<white>\uE00F<red>" + message)
+                .build();
+        getInventory().setItem(slot, barrierItem);
+        Bukkit.getScheduler().runTaskLater(SmashEngine.getPlugin(SmashEngine.class), () -> {
+            getInventory().setItem(slot, originalItem);
+        }, 30L);
     }
 }
