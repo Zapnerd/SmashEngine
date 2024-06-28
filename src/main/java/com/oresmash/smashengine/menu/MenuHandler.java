@@ -1,10 +1,12 @@
 package com.oresmash.smashengine.menu;
 
+import com.oresmash.smashengine.SmashEngine;
 import com.oresmash.smashengine.item.ItemBuilder;
 import lombok.Getter;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -196,5 +198,23 @@ public abstract class MenuHandler implements InventoryHolder {
      */
     public void clear() {
         inventory.clear();
+    }
+
+    /**
+     * Shows an error item for a slot and reverts to the original item after 30 ticks.
+     *
+     * @param slot The slot to show the error in.
+     * @param originalItem The original item to revert to.
+     * @param message The error message to display.
+     */
+    public void showError(int slot, ItemStack originalItem, String message) {
+        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BIT, 1, 0.75f);
+        ItemStack barrierItem = new ItemBuilder(Material.BARRIER)
+                .name("<white>\uE00F<red>" + message)
+                .build();
+        getInventory().setItem(slot, barrierItem);
+        Bukkit.getScheduler().runTaskLater(SmashEngine.getPlugin(SmashEngine.class), () -> {
+            getInventory().setItem(slot, originalItem);
+        }, 30L);
     }
 }
