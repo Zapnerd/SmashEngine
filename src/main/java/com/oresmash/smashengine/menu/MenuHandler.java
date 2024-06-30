@@ -10,6 +10,8 @@ import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
@@ -19,9 +21,6 @@ import java.util.stream.Collectors;
 
 import static com.oresmash.smashengine.SmashEngine.textUtils;
 
-/**
- * Abstract class representing a menu handler for creating and managing custom GUIs.
- */
 public abstract class MenuHandler implements InventoryHolder {
     private final Inventory inventory;
     @Getter
@@ -30,13 +29,6 @@ public abstract class MenuHandler implements InventoryHolder {
     private final String title;
     private final Player player;
 
-    /**
-     * Constructs a MenuHandler with the specified title and rows.
-     *
-     * @param player The player for whom the menu is being created.
-     * @param title  The title of the menu.
-     * @param rows   The number of rows in the menu.
-     */
     public MenuHandler(Player player, String title, int rows) {
         this.player = player;
         this.title = title;
@@ -49,12 +41,6 @@ public abstract class MenuHandler implements InventoryHolder {
         this.inventory = Bukkit.createInventory(this, this.rows * 9, textUtils.colorize(title));
     }
 
-    /**
-     * Constructs a MenuHandler from a configuration section.
-     *
-     * @param player        The player for whom the menu is being created.
-     * @param configSection The configuration section.
-     */
     public MenuHandler(Player player, ConfigurationSection configSection) {
         this(
                 player,
@@ -64,11 +50,6 @@ public abstract class MenuHandler implements InventoryHolder {
         setupFromConfig(configSection);
     }
 
-    /**
-     * Sets up the menu from a configuration section.
-     *
-     * @param configSection The configuration section.
-     */
     private void setupFromConfig(ConfigurationSection configSection) {
         if (configSection.contains("filler")) {
             Material fillerMaterial = Material.getMaterial(configSection.getString("filler"));
@@ -122,26 +103,17 @@ public abstract class MenuHandler implements InventoryHolder {
         }
     }
 
-    /**
-     * Abstract method to handle inventory click events.
-     *
-     * @param event The InventoryClickEvent.
-     */
     public abstract void onClick(InventoryClickEvent event);
 
-    /**
-     * Abstract method to set the contents of the inventory.
-     */
     public abstract void setContents();
 
-    /**
-     * Opens the menu for the specified player.
-     *
-     * @param player The player to open the menu for.
-     */
     public void open(Player player) {
         setContents();
         player.openInventory(this.inventory);
+    }
+
+    public void update() {
+        player.updateInventory();
     }
 
     @Override
@@ -149,24 +121,10 @@ public abstract class MenuHandler implements InventoryHolder {
         return inventory;
     }
 
-    /**
-     * Method to customize items before they are set in the inventory.
-     *
-     * @param item        The item stack to edit.
-     * @param slot        The slot in which the item will be placed.
-     * @param itemSection The configuration section of the item.
-     * @return The edited item stack.
-     */
     protected ItemStack editItem(ItemStack item, int slot, ConfigurationSection itemSection) {
-        // Override this method to customize item before setting it
         return item;
     }
 
-    /**
-     * Fills the border of the inventory with the specified item.
-     *
-     * @param item The item to fill the border with.
-     */
     public void border(ItemStack item) {
         int size = inventory.getSize();
         int columns = 9;
@@ -182,31 +140,16 @@ public abstract class MenuHandler implements InventoryHolder {
         }
     }
 
-    /**
-     * Fills the entire inventory with the specified item.
-     *
-     * @param item The item to fill the inventory with.
-     */
     public void fill(ItemStack item) {
         for (int i = 0; i < inventory.getSize(); i++) {
             inventory.setItem(i, item);
         }
     }
 
-    /**
-     * Clears the entire inventory.
-     */
     public void clear() {
         inventory.clear();
     }
 
-    /**
-     * Shows an error item for a slot and reverts to the original item after 30 ticks.
-     *
-     * @param slot The slot to show the error in.
-     * @param originalItem The original item to revert to.
-     * @param message The error message to display.
-     */
     public void showError(int slot, ItemStack originalItem, String message) {
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BIT, 1, 0.75f);
         ItemStack barrierItem = new ItemBuilder(Material.BARRIER)
@@ -215,6 +158,20 @@ public abstract class MenuHandler implements InventoryHolder {
         getInventory().setItem(slot, barrierItem);
         Bukkit.getScheduler().runTaskLater(SmashEngine.getPlugin(SmashEngine.class), () -> {
             getInventory().setItem(slot, originalItem);
+            update();
         }, 30L);
     }
+
+    public void onClose(InventoryCloseEvent event) {
+        // Override this method to handle actions when the inventory is closed
+    }
+
+    protected boolean isClickInTopInventory(InventoryClickEvent event) {
+        return event.getClickedInventory() != null && event.getClickedInventory().equals(event.getView().getTopInventory());
+    }
+
+    protected boolean isClickInBottomInventory(InventoryClickEvent event) {
+        return event.getClickedInventory() != null && event.getClickedInventory().equals(event.getView().getBottomInventory());
+    }
+
 }
